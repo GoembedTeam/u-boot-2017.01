@@ -93,6 +93,7 @@
 #define PHY_ANEG_TIMEOUT	16000	/* PHY needs longer aneg time at 1G */
 #define CONFIG_PHY_MICREL
 #define CONFIG_PHY_MICREL_KSZ9031
+#define CONFIG_PHY_ATHEROS
 
 #define CONFIG_SUPPORT_EMMC_BOOT
 

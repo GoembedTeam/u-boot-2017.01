@@ -97,7 +97,7 @@ static const struct dmm_lisa_map_regs am574x_idk_lisa_regs = {
 
 void emif_get_dmm_regs(const struct dmm_lisa_map_regs **dmm_lisa_regs)
 {
-	if (board_is_am571x_idk())
+	if(readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0)
 		*dmm_lisa_regs = &am571x_idk_lisa_regs;
 	else if (board_is_am574x_idk())
 		*dmm_lisa_regs = &am574x_idk_lisa_regs;
@@ -233,19 +233,22 @@ static const u32 beagle_x15_emif2_ddr3_ext_phy_ctrl_const_regs[] = {
 };
 
 static const struct emif_regs am571x_emif1_ddr3_666mhz_emif_regs = {
-	.sdram_config_init		= 0x61863332,
-	.sdram_config			= 0x61863332,
+	.sdram_config_init		= 0x61851b32,
+	.sdram_config			= 0x61851b32,
 	.sdram_config2			= 0x08000000,
-	.ref_ctrl			= 0x0000514d,
-	.ref_ctrl_final			= 0x0000144a,
-	.sdram_tim1			= 0xd333887c,
-	.sdram_tim2			= 0x30b37fe3,
-	.sdram_tim3			= 0x409f8ad8,
-	.read_idle_ctrl			= 0x00050000,
+	.ref_ctrl			= 0x000040f1,
+	.ref_ctrl_final			= 0x00001035,
+	.sdram_tim1			= 0xeeef265b,
+	.sdram_tim2			= 0x308f7fda,
+	.sdram_tim3			= 0x409f88a8,
+	.read_idle_ctrl			= 0x00090000,
 	.zq_config			= 0x5007190b,
 	.temp_alert_config		= 0x00000000,
-	.emif_ddr_phy_ctlr_1_init	= 0x0024400f,
-	.emif_ddr_phy_ctlr_1		= 0x0e24400f,
+	.emif_ddr_phy_ctlr_1_init	= 0x0024400b,
+	.emif_ddr_phy_ctlr_1		= 0x0e24400b,
+	.emif_ddr_ext_phy_ctrl_1	= 0x10040100,
+	.emif_ddr_ext_phy_ctrl_2	= 0x00910091,
+	.emif_ddr_ext_phy_ctrl_3	= 0x00950095,
 	.emif_ddr_ext_phy_ctrl_1	= 0x10040100,
 	.emif_ddr_ext_phy_ctrl_2	= 0x00910091,
 	.emif_ddr_ext_phy_ctrl_3	= 0x00950095,
@@ -289,7 +292,7 @@ void emif_get_reg_dump(u32 emif_nr, const struct emif_regs **regs)
 {
 	switch (emif_nr) {
 	case 1:
-		if (board_is_am571x_idk())
+		if (readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0)
 			*regs = &am571x_emif1_ddr3_666mhz_emif_regs;
 		else if (board_is_am574x_idk())
 			*regs = &am574x_emif1_ddr3_666mhz_emif_ecc_regs;
@@ -418,10 +421,31 @@ struct vcores_data am572x_idk_volts = {
 struct vcores_data am571x_idk_volts = {
 	.mpu.value[OPP_NOM]	= VDD_MPU_DRA7_NOM,
 	.mpu.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_MPU_NOM,
-	.mpu.efuse.reg_bits     = DRA752_EFUSE_REGBITS,
-	.mpu.addr		= TPS659038_REG_ADDR_SMPS12,
-	.mpu.pmic		= &tps659038,
+	.mpu.efuse.reg_bits = DRA752_EFUSE_REGBITS,
+	.mpu.addr	= TPS65917_REG_ADDR_SMPS1,
+	.mpu.pmic	= &tps659038,
 	.mpu.abb_tx_done_mask = OMAP_ABB_MPU_TXDONE_MASK,
+
+	.core.value[OPP_NOM]	= VDD_CORE_DRA7_NOM,
+	.core.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_CORE_NOM,
+	.core.efuse.reg_bits = DRA752_EFUSE_REGBITS,
+	.core.addr	= TPS65917_REG_ADDR_SMPS2,
+	.core.pmic	= &tps659038,
+
+	/*
+	 * The DSPEVE, GPU and IVA rails are usually grouped on DRA72x
+	 * designs and powered by TPS65917 SMPS3, as on the J6Eco EVM.
+	 */
+	.gpu.value[OPP_NOM]	= VDD_GPU_DRA7_NOM,
+	.gpu.value[OPP_OD]	= VDD_GPU_DRA7_OD,
+	.gpu.value[OPP_HIGH]	= VDD_GPU_DRA7_HIGH,
+	.gpu.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_GPU_NOM,
+	.gpu.efuse.reg[OPP_OD]	= STD_FUSE_OPP_VMIN_GPU_OD,
+	.gpu.efuse.reg[OPP_HIGH]	= STD_FUSE_OPP_VMIN_GPU_HIGH,
+	.gpu.efuse.reg_bits = DRA752_EFUSE_REGBITS,
+	.gpu.addr	= TPS65917_REG_ADDR_SMPS3,
+	.gpu.pmic	= &tps659038,
+	.gpu.abb_tx_done_mask = OMAP_ABB_GPU_TXDONE_MASK,
 
 	.eve.value[OPP_NOM]	= VDD_EVE_DRA7_NOM,
 	.eve.value[OPP_OD]	= VDD_EVE_DRA7_OD,
@@ -429,27 +453,10 @@ struct vcores_data am571x_idk_volts = {
 	.eve.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_DSPEVE_NOM,
 	.eve.efuse.reg[OPP_OD]	= STD_FUSE_OPP_VMIN_DSPEVE_OD,
 	.eve.efuse.reg[OPP_HIGH]	= STD_FUSE_OPP_VMIN_DSPEVE_HIGH,
-	.eve.efuse.reg_bits	= DRA752_EFUSE_REGBITS,
-	.eve.addr		= TPS659038_REG_ADDR_SMPS45,
-	.eve.pmic		= &tps659038,
-	.eve.abb_tx_done_mask	= OMAP_ABB_EVE_TXDONE_MASK,
-
-	.gpu.value[OPP_NOM]	= VDD_GPU_DRA7_NOM,
-	.gpu.value[OPP_OD]	= VDD_GPU_DRA7_OD,
-	.gpu.value[OPP_HIGH]	= VDD_GPU_DRA7_HIGH,
-	.gpu.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_GPU_NOM,
-	.gpu.efuse.reg[OPP_OD]	= STD_FUSE_OPP_VMIN_GPU_OD,
-	.gpu.efuse.reg[OPP_HIGH]	= STD_FUSE_OPP_VMIN_GPU_HIGH,
-	.gpu.efuse.reg_bits	= DRA752_EFUSE_REGBITS,
-	.gpu.addr		= TPS659038_REG_ADDR_SMPS6,
-	.gpu.pmic		= &tps659038,
-	.gpu.abb_tx_done_mask	= OMAP_ABB_GPU_TXDONE_MASK,
-
-	.core.value[OPP_NOM]	= VDD_CORE_DRA7_NOM,
-	.core.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_CORE_NOM,
-	.core.efuse.reg_bits	= DRA752_EFUSE_REGBITS,
-	.core.addr		= TPS659038_REG_ADDR_SMPS7,
-	.core.pmic		= &tps659038,
+	.eve.efuse.reg_bits = DRA752_EFUSE_REGBITS,
+	.eve.addr	= TPS65917_REG_ADDR_SMPS3,
+	.eve.pmic	= &tps659038,
+	.eve.abb_tx_done_mask = OMAP_ABB_EVE_TXDONE_MASK,
 
 	.iva.value[OPP_NOM]	= VDD_IVA_DRA7_NOM,
 	.iva.value[OPP_OD]	= VDD_IVA_DRA7_OD,
@@ -457,10 +464,10 @@ struct vcores_data am571x_idk_volts = {
 	.iva.efuse.reg[OPP_NOM]	= STD_FUSE_OPP_VMIN_IVA_NOM,
 	.iva.efuse.reg[OPP_OD]	= STD_FUSE_OPP_VMIN_IVA_OD,
 	.iva.efuse.reg[OPP_HIGH]	= STD_FUSE_OPP_VMIN_IVA_HIGH,
-	.iva.efuse.reg_bits	= DRA752_EFUSE_REGBITS,
-	.iva.addr		= TPS659038_REG_ADDR_SMPS45,
-	.iva.pmic		= &tps659038,
-	.iva.abb_tx_done_mask	= OMAP_ABB_IVA_TXDONE_MASK,
+	.iva.efuse.reg_bits = DRA752_EFUSE_REGBITS,
+	.iva.addr	= TPS65917_REG_ADDR_SMPS3,
+	.iva.pmic	= &tps659038,
+	.iva.abb_tx_done_mask = OMAP_ABB_IVA_TXDONE_MASK,
 };
 
 int get_voltrail_opp(int rail_offset)
@@ -527,7 +534,7 @@ void do_board_detect(void)
 		bname = "AM574x IDK";
 	else if (board_is_am572x_idk())
 		bname = "AM572x IDK";
-	else if (board_is_am571x_idk())
+	else if(readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0)
 		bname = "AM571x IDK";
 
 	if (bname)
@@ -537,7 +544,7 @@ void do_board_detect(void)
 
 static void setup_board_eeprom_env(void)
 {
-	char *name = "beagle_x15";
+	char *name = "am57xx_supcore_rdk";
 	int rc;
 
 	rc = ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
@@ -561,7 +568,7 @@ static void setup_board_eeprom_env(void)
 		name = "am574x_idk";
 	} else if (board_is_am572x_idk()) {
 		name = "am572x_idk";
-	} else if (board_is_am571x_idk()) {
+	} else if(readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0) {
 		name = "am571x_idk";
 	} else {
 		printf("Unidentified board claims %s in eeprom header\n",
@@ -578,7 +585,7 @@ void vcores_init(void)
 {
 	if (board_is_am572x_idk() || board_is_am574x_idk())
 		*omap_vcores = &am572x_idk_volts;
-	else if (board_is_am571x_idk())
+	else if(readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0)
 		*omap_vcores = &am571x_idk_volts;
 	else
 		*omap_vcores = &beagle_x15_volts;
@@ -717,13 +724,10 @@ int board_late_init(void)
 	palmas_i2c_write_u8(TPS65903X_CHIP_P1, TPS65903X_PRIMARY_SECONDARY_PAD2,
 			    val);
 
-	am57x_idk_lcd_detect();
-
 #if !defined(CONFIG_SPL_BUILD)
 	board_ti_set_ethaddr(2);
 #endif
 	omap_die_id_serial();
-	omap_set_fastboot_vars();
 
 	return 0;
 }
@@ -752,7 +756,7 @@ void recalibrate_iodelay(void)
 		pconf_sz = ARRAY_SIZE(core_padconf_array_essential_am574x_idk);
 		iod = iodelay_cfg_array_am574x_idk;
 		iod_sz = ARRAY_SIZE(iodelay_cfg_array_am574x_idk);
-	} else if (board_is_am571x_idk()) {
+	} else if (readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0) {
 		pconf = core_padconf_array_essential_am571x_idk;
 		pconf_sz = ARRAY_SIZE(core_padconf_array_essential_am571x_idk);
 		iod = iodelay_cfg_array_am571x_idk;
@@ -1024,12 +1028,12 @@ static struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs	= 0x208,
 		.sliver_reg_ofs	= 0xd80,
-		.phy_addr	= 1,
+		.phy_addr	= 2,
 	},
 	{
 		.slave_reg_ofs	= 0x308,
 		.sliver_reg_ofs	= 0xdc0,
-		.phy_addr	= 2,
+		.phy_addr	= 1,
 	},
 };
 
@@ -1052,39 +1056,12 @@ static struct cpsw_platform_data cpsw_data = {
 	.version		= CPSW_CTRL_VERSION_2,
 };
 
-static u64 mac_to_u64(u8 mac[6])
-{
-	int i;
-	u64 addr = 0;
-
-	for (i = 0; i < 6; i++) {
-		addr <<= 8;
-		addr |= mac[i];
-	}
-
-	return addr;
-}
-
-static void u64_to_mac(u64 addr, u8 mac[6])
-{
-	mac[5] = addr;
-	mac[4] = addr >> 8;
-	mac[3] = addr >> 16;
-	mac[2] = addr >> 24;
-	mac[1] = addr >> 32;
-	mac[0] = addr >> 40;
-}
-
 int board_eth_init(bd_t *bis)
 {
 	int ret;
 	uint8_t mac_addr[6];
 	uint32_t mac_hi, mac_lo;
 	uint32_t ctrl_val;
-	int i;
-	u64 mac1, mac2;
-	u8 mac_addr1[6], mac_addr2[6];
-	int num_macs;
 
 	/* try reading mac address from efuse */
 	mac_lo = readl((*ctrl)->control_core_mac_id_0_lo);
@@ -1121,42 +1098,9 @@ int board_eth_init(bd_t *bis)
 	ctrl_val |= 0x22;
 	writel(ctrl_val, (*ctrl)->control_core_control_io1);
 
-	/* The phy address for the AM57xx IDK are different than x15 */
-	if (board_is_am572x_idk() || board_is_am571x_idk() ||
-	    board_is_am574x_idk()) {
-		cpsw_data.slave_data[0].phy_addr = 0;
-		cpsw_data.slave_data[1].phy_addr = 1;
-	}
-
 	ret = cpsw_register(&cpsw_data);
 	if (ret < 0)
 		printf("Error %d registering CPSW switch\n", ret);
-
-	/*
-	 * Export any Ethernet MAC addresses from EEPROM.
-	 * On AM57xx the 2 MAC addresses define the address range
-	 */
-	board_ti_get_eth_mac_addr(0, mac_addr1);
-	board_ti_get_eth_mac_addr(1, mac_addr2);
-
-	if (is_valid_ethaddr(mac_addr1) && is_valid_ethaddr(mac_addr2)) {
-		mac1 = mac_to_u64(mac_addr1);
-		mac2 = mac_to_u64(mac_addr2);
-
-		/* must contain an address range */
-		num_macs = mac2 - mac1 + 1;
-		/* <= 50 to protect against user programming error */
-		if (num_macs > 0 && num_macs <= 50) {
-			for (i = 0; i < num_macs; i++) {
-				u64_to_mac(mac1 + i, mac_addr);
-				if (is_valid_ethaddr(mac_addr)) {
-					eth_setenv_enetaddr_by_index("eth",
-								     i + 2,
-								     mac_addr);
-				}
-			}
-		}
-	}
 
 	return ret;
 }
@@ -1213,7 +1157,7 @@ int board_fit_config_name_match(const char *name)
 		return 0;
 	} else if (board_is_am574x_idk() && !strcmp(name, "am574x-idk")) {
 		return 0;
-	} else if (board_is_am571x_idk() && !strcmp(name, "am571x-idk")) {
+	} else if(readl(CONTROL_ID_CODE) == DRA722_CONTROL_ID_CODE_ES2_0 && !strcmp(name, "am571x-idk")) {
 		return 0;
 	}
 

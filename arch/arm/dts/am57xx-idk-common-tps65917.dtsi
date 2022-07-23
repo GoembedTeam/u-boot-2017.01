@@ -1,0 +1,286 @@
+/*
+ * Copyright (C) 2015-2016 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "am57xx-industrial-grade.dtsi"
+
+/ {
+
+	chosen {
+		stdout-path = &uart3;
+	};
+
+	vsys: fixedregulator-vsys {
+		compatible = "regulator-fixed";
+		regulator-name = "VSYS";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	vsys_3v3: fixedregulator-vsys_3v3 {
+		/* TPS62132RGTR */
+		compatible = "regulator-fixed";
+		regulator-name = "VSYS_3V3";
+		vin-supply = <&vsys>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	v3_3d: fixedregulator-v3_3d {
+		/* TPS22965DSG */
+		compatible = "regulator-fixed";
+		regulator-name = "V3_3D";
+		vin-supply = <&vsys_3v3>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	vcc3_3: fixedregulator-vcc3_3 {
+		/* TPS22965DSG */
+		compatible = "regulator-fixed";
+		regulator-name = "VCC3_3";
+		vin-supply = <&vsys>;
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+	tps65917: tps65917@58 {
+		compatible = "ti,tps65917";
+		reg = <0x58>;
+
+		interrupt-controller;
+		#interrupt-cells = <2>;
+				
+		ti,system-power-controller;
+				
+		tps65917_pmic {
+			compatible = "ti,tps65917-pmic";
+
+			tps65917_regulators: regulators {
+				smps1_reg: smps1 {
+					/* VDD_MPU */
+					regulator-name = "smps1";
+					regulator-min-microvolt = <850000>;
+					regulator-max-microvolt = <1250000>;
+					regulator-always-on;
+					regulator-boot-on;
+		   		};
+
+				smps2_reg: smps2 {
+					/* VDD_CORE */
+					regulator-name = "smps2";
+					regulator-min-microvolt = <850000>;
+					regulator-max-microvolt = <1150000>;
+					regulator-boot-on;
+					regulator-always-on;
+				};
+
+				smps3_reg: smps3 {
+					/* VDD_GPU IVA DSPEVE */
+					regulator-name = "smps3";
+					regulator-min-microvolt = <850000>;
+					regulator-max-microvolt = <1250000>;
+					regulator-boot-on;
+					regulator-always-on;
+		   		};
+
+				smps4_reg: smps4 {
+					/* VDDS1V8 */
+					regulator-name = "smps4";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+				};
+
+				smps5_reg: smps5 {
+					/* VDD_DDR */
+					regulator-name = "smps5";
+					regulator-min-microvolt = <1350000>;
+					regulator-max-microvolt = <1350000>;
+					regulator-boot-on;
+					regulator-always-on;
+		   		};
+
+				ldo1_reg: ldo1 {
+					/* LDO1_OUT --> SDIO  */
+					regulator-name = "ldo1";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-always-on;
+					regulator-boot-on;
+					regulator-allow-bypass;
+		  		};
+
+				ldo2_reg: ldo2 {
+					/* VDDA_1V8_PHY */
+					regulator-name = "ldo2";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-boot-on;
+					regulator-always-on;
+		  		};
+
+				ldo3_reg: ldo3 {
+					/* VDDA_1V8_PHY */
+					regulator-name = "ldo3";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-boot-on;
+					regulator-always-on;
+		  		};
+
+				ldo5_reg: ldo5 {
+					/* VDDA_1V8_PLL */
+					regulator-name = "ldo5";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-boot-on;
+		  		};
+
+				ldo4_reg: ldo4 {
+					/* VDDA_3V_USB: VDDA_USBHS33 */
+					regulator-name = "ldo4";
+					regulator-min-microvolt = <3300000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-boot-on;
+		  		};
+			};
+		};
+
+		tps65917_power_button {
+			compatible = "ti,palmas-pwrbutton";
+			interrupt-parent = <&tps65917>;
+			interrupts = <1 IRQ_TYPE_NONE>;
+			wakeup-source;
+			ti,palmas-long-press-seconds = <6>;
+		};
+	};
+};
+
+&uart3 {
+	status = "okay";
+};
+
+&mac {
+	status = "okay";
+	dual_emac;
+};
+
+&cpsw_emac0 {
+	phy_id = <&davinci_mdio>, <2>;
+	phy-mode = "rgmii";
+	dual_emac_res_vlan = <1>;
+};
+
+&cpsw_emac1 {
+	phy_id = <&davinci_mdio>, <1>;
+	phy-mode = "rgmii";
+	dual_emac_res_vlan = <2>;
+};
+
+&usb2_phy1 {
+	phy-supply = <&ldo4_reg>;
+};
+
+&usb2_phy2 {
+	phy-supply = <&ldo4_reg>;
+};
+
+&usb1 {
+	dr_mode = "host";
+};
+
+&usb2 {
+	dr_mode = "host";
+};
+
+&mmc1 {
+	status = "okay";
+	vmmc-supply = <&v3_3d>;
+	vmmc_aux-supply = <&ldo1_reg>;
+	bus-width = <4>;
+	cd-gpios = <&gpio6 27 GPIO_ACTIVE_LOW>; /* gpio 219 */
+	/delete-property/ sd-uhs-sdr104;
+	/delete-property/ sd-uhs-sdr50;
+	/delete-property/ sd-uhs-ddr50;
+	/delete-property/ sd-uhs-sdr25;
+	/delete-property/ sd-uhs-sdr12;
+};
+
+&mmc2 {
+	status = "okay";
+	vmmc-supply = <&v3_3d>;
+	bus-width = <8>;
+	ti,non-removable;
+	max-frequency = <96000000>;
+	no-1-8-v;
+	/delete-property/ mmc-hs200-1_8v;
+};
+
+&qspi {
+	status = "okay";
+
+	spi-max-frequency = <133000000>;
+	m25p80@0 {
+		compatible = "winbond,25q256jv", "jedec,spi-nor";
+		spi-max-frequency = <133000000>;
+		reg = <0>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <4>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/* MTD partition table.
+		 * The ROM checks the first four physical blocks
+		 * for a valid file to boot and the flash here is
+		 * 64KiB block size.
+		 */
+		partition@0 {
+			label = "QSPI.SPL";
+			reg = <0x00000000 0x000040000>;
+		};
+		partition@1 {
+			label = "QSPI.u-boot";
+			reg = <0x00040000 0x00100000>;
+		};
+		partition@2 {
+			label = "QSPI.u-boot-spl-os";
+			reg = <0x00140000 0x00080000>;
+		};
+		partition@3 {
+			label = "QSPI.u-boot-env";
+			reg = <0x001c0000 0x00010000>;
+		};
+		partition@4 {
+			label = "QSPI.u-boot-env.backup1";
+			reg = <0x001d0000 0x0010000>;
+		};
+		partition@5 {
+			label = "QSPI.kernel";
+			reg = <0x001e0000 0x0800000>;
+		};
+		partition@6 {
+			label = "QSPI.file-system";
+			reg = <0x009e0000 0x01620000>;
+		};
+	};
+};
